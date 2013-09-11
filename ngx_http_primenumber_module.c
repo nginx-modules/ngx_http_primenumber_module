@@ -13,7 +13,13 @@
   "</body>\n" \
   "</html>\n"
 
+typedef struct {
+	ngx_uint_t number;
+	ngx_http_complex_value_t *ncv;
+} ngx_http_primenumber_conf_t;
+
 static ngx_int_t ngx_http_primenumber_handler(ngx_http_request_t *r);
+static void *ngx_http_primenumber_create_loc_conf(ngx_conf_t *cf);
 static char *ngx_http_primenumber(ngx_conf_t *cf, ngx_command_t *cmd, void *conf);
 
 static ngx_http_module_t ngx_http_primenumber_module_ctx = {
@@ -91,17 +97,28 @@ static ngx_int_t ngx_http_primenumber_handler(ngx_http_request_t *r) {
 	out.buf     = b;
 	out.next    = NULL;
 
-	r->headers.out.content_type.len  = ngx_strlen("text/html");
-	r->headers.out.content_type.data = (u_char *) "text/html";
-	r->headers.out.status            = NGX_HTTP_OK;
-	r->headers.out.content_length_n  = clen;
+	r->headers_out.content_type.len  = ngx_strlen("text/html");
+	r->headers_out.content_type.data = (u_char *) "text/html";
+	r->headers_out.status            = NGX_HTTP_OK;
+	r->headers_out.content_length_n  = clen;
 
 	rc = ngx_http_send_header(r);
-	if (rc == NGX_ERROR || rc > NGX_OK || r->headers_only) {
+	if (rc == NGX_ERROR || rc > NGX_OK || r->header_only) {
 		return rc;
 	}
 
 	return ngx_http_output_filter(r, &out);
+}
+
+static void *ngx_http_primenumber_create_loc_conf(ngx_conf_t *cf) {
+	ngx_http_primenumber_conf_t *loc_conf;
+	loc_conf = ngx_pcalloc(cf->pool, sizeof(ngx_http_primenumber_conf_t));
+	if (loc_conf == NULL) {
+		return NGX_CONF_ERROR;
+	}
+	loc_conf->number = NGX_CONF_UNSET_UINT;
+
+	return loc_conf;
 }
 
 static char *ngx_http_primenumber(ngx_conf_t *cf, ngx_command_t *cmd, void *conf) {
